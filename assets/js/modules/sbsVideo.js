@@ -1,9 +1,7 @@
-export function renderSbsVideo(resource) {
-  const wrap = document.createElement('div');
-  wrap.className = 'video-preview';
-  resource.element.controls = true;
-  resource.element.playsInline = true;
-  resource.element.setAttribute('playsinline', '');
-  wrap.append(resource.element);
-  return wrap;
+import { drawSbsImage } from './sbsImage.js';
+
+// Encapsula el render SBS de video: ambas vistas provienen del mismo fotograma.
+// La reproducción y eventos se gestionan exclusivamente desde videoEditor.js.
+export function drawSbsVideoFrame(ctx, resource, size, calibration) {
+  drawSbsImage(ctx, resource, size, calibration);
 }

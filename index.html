@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f5f5f3">
   <meta name="description" content="StereoVision Studio 3D: edición local de imágenes anaglifo, imágenes SBS y video SBS.">
-  <title>StereoVision Studio 3D</title>
+  <title>StereoVision Studio 3D · v0.3</title>
   <link rel="stylesheet" href="./assets/css/styles.css">
   <link rel="stylesheet" href="./assets/css/responsive.css">
   <script type="module" src="./assets/js/main.js"></script>
@@ -36,11 +36,26 @@
         <button type="button" class="mode-button" data-mode="sbs-video" aria-pressed="false"><span aria-hidden="true" class="mode-glyph">▷</span> Video SBS</button>
       </nav>
 
+      <div id="source-choice" class="source-choice" aria-label="Tipo de fuente de imágenes">
+        <span class="source-caption">¿Cómo tienes tus imágenes?</span>
+        <div class="source-options" role="group" aria-label="Origen del contenido">
+          <button type="button" class="source-button selected" data-source="combined" aria-pressed="true">Una imagen preparada</button>
+          <button type="button" class="source-button" data-source="pair" aria-pressed="false">Izquierda + derecha</button>
+        </div>
+      </div>
+
       <section class="import-row" aria-label="Importación de archivos">
-        <div class="import-actions">
+        <div class="import-actions" id="single-import-actions">
           <button id="import-button" type="button" class="button button-primary"><span aria-hidden="true">＋</span> Elegir archivo</button>
           <input id="file-input" type="file" class="visually-hidden" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-label="Seleccionar un archivo local">
           <button id="clear-button" type="button" class="button button-ghost" disabled>Quitar</button>
+        </div>
+        <div id="pair-import-actions" class="pair-import-actions" hidden>
+          <label class="eye-file-button" for="left-file-input"><span class="eye-label">Ojo izquierdo</span><strong id="left-file-label">+ Elegir imagen</strong></label>
+          <input id="left-file-input" type="file" class="visually-hidden" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-label="Seleccionar foto del ojo izquierdo">
+          <label class="eye-file-button" for="right-file-input"><span class="eye-label">Ojo derecho</span><strong id="right-file-label">+ Elegir imagen</strong></label>
+          <input id="right-file-input" type="file" class="visually-hidden" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-label="Seleccionar foto del ojo derecho">
+          <button id="pair-clear-button" class="button button-ghost" type="button">Quitar par</button>
         </div>
         <div class="import-summary"><span id="active-file-name">Ningún archivo seleccionado</span><small id="accepted-formats">JPG, PNG y WebP</small></div>
       </section>
@@ -69,6 +84,11 @@
             <button type="button" id="download-button" class="button button-secondary"><span aria-hidden="true">↓</span> Descargar PNG</button>
             <button type="button" id="reset-button" class="button button-text">Restablecer</button>
           </div>
+          <div id="video-playback" class="video-playback" hidden aria-label="Reproductor MP4">
+            <div class="video-transport"><button id="video-back" type="button" class="quick-button" aria-label="Retroceder diez segundos">−10s</button><button id="video-play" type="button" class="button button-primary">▶ Reproducir</button><button id="video-forward" type="button" class="quick-button" aria-label="Adelantar diez segundos">+10s</button><span id="video-time" class="time-label">0:00 / 0:00</span></div>
+            <label class="video-seek-label" for="video-progress">Progreso del video</label><input id="video-progress" type="range" min="0" max="1000" step="1" value="0" aria-label="Buscar en el video">
+            <div class="volume-group"><label for="video-volume">Volumen</label><input id="video-volume" type="range" min="0" max="100" value="100" step="1"><output id="video-volume-value">100%</output></div>
+          </div>
           <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
           <p class="gesture-help" id="gesture-help" hidden>Un dedo para mover · Dos dedos para ampliar · Bloquea para evitar movimientos accidentales.</p>
         </section>
@@ -85,19 +105,60 @@
               <label for="contrast-slider"><span>Contraste</span><output id="contrast-value">100%</output></label>
               <input id="contrast-slider" type="range" min="50" max="150" value="100" step="1">
             </div>
-            <div class="control-group" id="sbs-controls" hidden>
-              <label for="disparity-slider"><span>Separación horizontal</span><output id="disparity-value">0%</output></label>
-              <input id="disparity-slider" type="range" min="-10" max="10" value="0" step="0.25">
-              <label for="vertical-slider"><span>Alineación vertical</span><output id="vertical-value">0%</output></label>
-              <input id="vertical-slider" type="range" min="-10" max="10" value="0" step="0.25">
-              <label class="toggle-row" for="swap-eyes"><span><strong>Intercambiar ojos</strong><small>Izquierda ↔ derecha</small></span><input id="swap-eyes" type="checkbox" role="switch"><span class="switch-ui" aria-hidden="true"></span></label>
-              <p class="micro-hint">Usa ajustes suaves: no fuerces la vista si aparece visión doble.</p>
+            <div class="control-group" id="stereo-controls">
+              <h3 class="mini-heading">Calibración estereoscópica</h3>
+              <label for="disparity-slider"><span>Desplazamiento horizontal</span><output id="disparity-value">0 px</output></label>
+              <input id="disparity-slider" type="range" min="-80" max="80" value="0" step="1">
+              <label for="vertical-slider"><span>Alineación vertical</span><output id="vertical-value">0 px</output></label>
+              <input id="vertical-slider" type="range" min="-80" max="80" value="0" step="1">
+              <label class="toggle-row" id="swap-eyes-row" for="swap-eyes"><span><strong>Intercambiar ojos</strong><small>Perspectiva izquierda ↔ derecha</small></span><input id="swap-eyes" type="checkbox" role="switch"><span class="switch-ui" aria-hidden="true"></span></label>
+              <p class="micro-hint">Ajusta gradualmente y evita valores que provoquen visión doble.</p>
             </div>
+
+            <div class="control-group movement-panel">
+              <h3 class="mini-heading">Mover con el dedo</h3>
+              <div class="move-selector" role="group" aria-label="Mover en conjunto o por ojo">
+                <button type="button" data-move="both" class="move-button selected" aria-pressed="true">Ambos</button>
+                <button type="button" data-move="left" class="move-button" aria-pressed="false">Izquierdo</button>
+                <button type="button" data-move="right" class="move-button" aria-pressed="false">Derecho</button>
+              </div>
+              <p class="micro-hint">Arrastra para mover la selección. Pellizca para cambiar la escala conjunta.</p>
+            </div>
+            <details class="more-info eye-fine-tuning" id="eye-offset-details">
+              <summary>Ajuste fino de cada ojo <span aria-hidden="true">⌄</span></summary>
+              <div class="control-group eye-controls">
+                <h3 class="eye-group-label">Ojo izquierdo</h3>
+                <label for="leftX-slider"><span>Horizontal</span><output id="leftX-value">0 px</output></label>
+                <input id="leftX-slider" type="range" min="-180" max="180" value="0" step="1">
+                <label for="leftY-slider"><span>Vertical</span><output id="leftY-value">0 px</output></label>
+                <input id="leftY-slider" type="range" min="-180" max="180" value="0" step="1">
+                <h3 class="eye-group-label">Ojo derecho</h3>
+                <label for="rightX-slider"><span>Horizontal</span><output id="rightX-value">0 px</output></label>
+                <input id="rightX-slider" type="range" min="-180" max="180" value="0" step="1">
+                <label for="rightY-slider"><span>Vertical</span><output id="rightY-value">0 px</output></label>
+                <input id="rightY-slider" type="range" min="-180" max="180" value="0" step="1">
+              </div>
+            </details>
             <div class="lock-description" id="lock-description">Gestos habilitados. Puedes mover y ampliar la imagen directamente.</div>
           </div>
           <div id="video-controls" hidden>
-            <p class="tool-panel-intro">Video MP4 local. Usa los controles del reproductor para reproducir, pausar, buscar y ajustar el volumen.</p>
-            <p class="micro-hint">El modo VR y los ajustes dinámicos de video se incorporarán en la siguiente etapa.</p>
+            <p class="tool-panel-intro">Calibración básica mientras se reproduce. Un único video alimenta ambos ojos.</p>
+            <div class="control-group">
+              <label for="video-zoom-slider"><span>Escala</span><output id="video-zoom-value">100%</output></label>
+              <input id="video-zoom-slider" type="range" min="50" max="400" value="100" step="1">
+              <h3 class="mini-heading">Calibración estereoscópica</h3>
+              <label for="video-disparity-slider"><span>Desplazamiento horizontal</span><output id="video-disparity-value">0 px</output></label>
+              <input id="video-disparity-slider" type="range" min="-80" max="80" value="0" step="1">
+              <label class="toggle-row" for="video-swap-eyes"><span><strong>Intercambiar ojos</strong><small>Izquierda ↔ derecha</small></span><input id="video-swap-eyes" type="checkbox" role="switch"><span class="switch-ui" aria-hidden="true"></span></label>
+              <button id="video-reset-button" type="button" class="button button-secondary wide-button">Restablecer ajustes</button>
+            </div>
+            <p class="micro-hint">El visor VR de video y la exportación MP4 quedan para una etapa posterior.</p>
+          </div>
+          <div id="preset-panel" class="preset-panel" hidden>
+            <h3 class="mini-heading">Mis ajustes guardados</h3>
+            <div class="preset-new"><input id="preset-name" type="text" maxlength="48" placeholder="Nombre del ajuste" aria-label="Nombre del ajuste"><button id="preset-save" type="button" class="button button-secondary">Guardar</button></div>
+            <div class="preset-existing"><select id="preset-select" aria-label="Seleccionar un ajuste guardado"><option value="">Selecciona un ajuste...</option></select><div class="preset-buttons"><button id="preset-apply" type="button" class="button button-ghost" disabled>Aplicar</button><button id="preset-delete" type="button" class="button button-text" disabled>Eliminar</button></div></div>
+            <p class="micro-hint">Se guardan solo valores de calibración en este navegador, nunca fotografías ni videos. Para usarlos con otro archivo debes aplicarlos manualmente.</p>
           </div>
 
           <details class="more-info" id="file-info">
@@ -116,7 +177,7 @@
           </details>
         </aside>
       </div>
-      <p class="privacy-footer">Todo ocurre en tu dispositivo · Sin cuentas ni servidores · StereoVision Studio 3D v0.2</p>
+      <p class="privacy-footer">Todo ocurre en tu dispositivo · Sin cuentas ni servidores · StereoVision Studio 3D v0.3</p>
     </main>
     <footer class="app-footer">Desarrollado por Derek Alejandro Vargas Meneses · ITIC · 22200792 · TecNM Pachuca</footer>
   </div>

@@ -16,6 +16,7 @@ export class ImageEditor {
     this.onChange = onChange;
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'editor-canvas';
+    this.scratch = {left:document.createElement('canvas'),right:document.createElement('canvas')};
     this.canvas.tabIndex = 0;
     this.canvas.role = 'img';
     this.canvas.setAttribute('aria-label', 'Imagen ajustable. Arrastra para mover, pellizca para zoom. Flechas para mover y teclas más y menos para zoom.');
@@ -67,7 +68,7 @@ export class ImageEditor {
     ctx.fillStyle = '#111518';
     ctx.fillRect(0, 0, width, height);
     const scaled = { width, height, scaleX: width / cssWidth, scaleY: height / cssHeight };
-    if (this.resource.mode === 'anaglyph') drawAnaglyph(ctx, this.resource, scaled, this.settings);
+    if (this.resource.mode === 'anaglyph') drawAnaglyph(ctx, this.resource, scaled, this.settings, this.scratch);
     else drawSbsImage(ctx, this.resource, scaled, this.settings);
   }
   setZoom(next, anchor) {
@@ -83,7 +84,7 @@ export class ImageEditor {
     this.changed();
   }
   pointerDown(event) {
-    if (this.settings.locked || event.button !== 0 || this.closed) return;
+    if (this.settings.locked || (event.pointerType==='mouse' && event.button !== 0) || this.closed) return;
     event.preventDefault();
     this.canvas.setPointerCapture(event.pointerId);
     this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -108,8 +109,9 @@ export class ImageEditor {
       this.settings.panY = mid.y-centerY -ratio*(g.mid.y-centerY-g.panY);
     } else if (this.dragStart) {
       const p = [...this.pointers.values()][0];
-      this.settings.panX = this.dragStart.panX + p.x-this.dragStart.x;
-      this.settings.panY = this.dragStart.panY + p.y-this.dragStart.y;
+      const limit=this.dragStart.xField==='panX'?1800:180;
+      this.settings[this.dragStart.xField] = clamp(this.dragStart.panX + p.x-this.dragStart.x, -limit, limit);
+      this.settings[this.dragStart.yField] = clamp(this.dragStart.panY + p.y-this.dragStart.y, -limit, limit);
     }
     this.changed();
   }
@@ -126,7 +128,9 @@ export class ImageEditor {
       this.startGesture = { distance: Math.hypot(a.x-b.x,a.y-b.y), mid: {x:(a.x+b.x)/2,y:(a.y+b.y)/2}, zoom: this.settings.zoom, panX: this.settings.panX, panY: this.settings.panY };
     } else if (this.pointers.size === 1) {
       const p=[...this.pointers.values()][0];
-      this.dragStart = { x:p.x,y:p.y,panX:this.settings.panX,panY:this.settings.panY };
+      const [xField,yField] = this.settings.moveTarget==='left'?['leftX','leftY']:
+        this.settings.moveTarget==='right'?['rightX','rightY']:['panX','panY'];
+      this.dragStart = { x:p.x,y:p.y,xField,yField,panX:this.settings[xField],panY:this.settings[yField] };
     }
   }
   wheel(event) {
@@ -138,11 +142,13 @@ export class ImageEditor {
   key(event) {
     if (this.settings.locked) return;
     const step = event.shiftKey ? 30 : 12;
+    const [xField,yField] = this.settings.moveTarget==='left'?['leftX','leftY']:
+      this.settings.moveTarget==='right'?['rightX','rightY']:['panX','panY'];
     switch (event.key) {
-      case 'ArrowLeft': this.settings.panX -= step; break;
-      case 'ArrowRight': this.settings.panX += step; break;
-      case 'ArrowUp': this.settings.panY -= step; break;
-      case 'ArrowDown': this.settings.panY += step; break;
+      case 'ArrowLeft': this.settings[xField] -= step; break;
+      case 'ArrowRight': this.settings[xField] += step; break;
+      case 'ArrowUp': this.settings[yField] -= step; break;
+      case 'ArrowDown': this.settings[yField] += step; break;
       case '+': case '=': this.setZoom(this.settings.zoom + .1); event.preventDefault(); return;
       case '-': case '_': this.setZoom(this.settings.zoom - .1); event.preventDefault(); return;
       default: return;
@@ -182,6 +188,9 @@ export class ImageEditor {
     this.canvas.removeEventListener('wheel',this.onWheel);
     this.canvas.removeEventListener('keydown',this.onKey);
     this.canvas.remove();
-    this.canvas.width=0; this.canvas.height=0; this.host=null;
+    this.canvas.width=0; this.canvas.height=0;
+    this.scratch.left.width=this.scratch.left.height=0;
+    this.scratch.right.width=this.scratch.right.height=0;
+    this.host=null;
   }
 }

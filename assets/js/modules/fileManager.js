@@ -92,7 +92,7 @@ export async function openLocalMedia(file, mode, signal) {
     if (mode !== 'anaglyph' && width % 2 !== 0) throw new MediaLoadError('El contenido SBS debe tener un ancho par, para dividirlo en dos mitades iguales.');
     let released = false;
     return {
-      file, mode, url, element, width, height,
+      file, mode, type: 'combined', url, element, width, height,
       duration: isVideo ? element.duration : null,
       dispose() {
         if (released) return;
@@ -118,4 +118,24 @@ export async function openLocalMedia(file, mode, signal) {
     URL.revokeObjectURL(url);
     throw error;
   }
+}
+
+
+// Las dos fotos se decodifican y validan independientemente. No se duplican vistas.
+export async function openStereoPair(leftFile,rightFile,mode,signal){
+  if(!['anaglyph','sbs-image'].includes(mode))throw new MediaLoadError('Un par de fotografías solo se admite en los módulos de imagen.');
+  if(leftFile===rightFile)throw new MediaLoadError('Selecciona dos fotografías distintas: ojo izquierdo y ojo derecho.');
+  let left=null,right=null;
+  try {
+    left=await openLocalMedia(leftFile,'anaglyph',signal);
+    right=await openLocalMedia(rightFile,'anaglyph',signal);
+    throwIfAborted(signal);
+    let released=false;
+    return {
+      type:'pair',mode,file:leftFile,files:[leftFile,rightFile],left,right,
+      width:mode==='anaglyph'?Math.max(left.width,right.width):Math.max(left.width,right.width)*2,
+      height:Math.max(left.height,right.height),
+      dispose(){if(released)return;released=true;left.dispose();right.dispose();},
+    };
+  }catch(error){left?.dispose();right?.dispose();throw error;}
 }
