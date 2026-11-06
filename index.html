@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f5f3">
+  <meta name="description" content="StereoVision Studio 3D: edición local de imágenes anaglifo, imágenes SBS y video SBS.">
+  <title>StereoVision Studio 3D</title>
+  <link rel="stylesheet" href="./assets/css/styles.css">
+  <link rel="stylesheet" href="./assets/css/responsive.css">
+  <script type="module" src="./assets/js/main.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="StereoVision Studio 3D, inicio">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+        <span class="brand-name">StereoVision <span>Studio 3D</span></span>
+      </a>
+      <span class="local-note"><span class="online-dot" aria-hidden="true"></span>Archivos privados · Edición local</span>
+    </header>
+
+    <main class="studio-shell">
+      <div class="intro-row">
+        <div>
+          <p class="eyebrow">ESTUDIO ESTEREOSCÓPICO</p>
+          <h1 id="studio-title">Imágenes anaglifo</h1>
+          <p class="intro-text" id="studio-description">Ajusta tus imágenes rojo-cian de forma sencilla.</p>
+        </div>
+        <span id="state-indicator" class="state-badge" data-state="empty"><span class="state-dot" aria-hidden="true"></span><span id="state-text">Sin archivo</span></span>
+      </div>
+
+      <nav class="mode-switch" aria-label="Seleccionar módulo antes de importar">
+        <button type="button" class="mode-button active" data-mode="anaglyph" aria-pressed="true"><span aria-hidden="true" class="mode-glyph anaglyph-glyph">◉</span> Anaglifo</button>
+        <button type="button" class="mode-button" data-mode="sbs-image" aria-pressed="false"><span aria-hidden="true" class="mode-glyph">◫</span> Imagen SBS</button>
+        <button type="button" class="mode-button" data-mode="sbs-video" aria-pressed="false"><span aria-hidden="true" class="mode-glyph">▷</span> Video SBS</button>
+      </nav>
+
+      <section class="import-row" aria-label="Importación de archivos">
+        <div class="import-actions">
+          <button id="import-button" type="button" class="button button-primary"><span aria-hidden="true">＋</span> Elegir archivo</button>
+          <input id="file-input" type="file" class="visually-hidden" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-label="Seleccionar un archivo local">
+          <button id="clear-button" type="button" class="button button-ghost" disabled>Quitar</button>
+        </div>
+        <div class="import-summary"><span id="active-file-name">Ningún archivo seleccionado</span><small id="accepted-formats">JPG, PNG y WebP</small></div>
+      </section>
+
+      <div class="workspace">
+        <section class="work-view" aria-label="Visor y herramientas rápidas">
+          <div class="viewer-card" id="viewer-card">
+            <div class="viewer-topline">
+              <span id="viewer-mode">ANAGLIFO</span>
+              <span id="viewer-resolution">Vista previa</span>
+            </div>
+            <div class="viewer-stage" id="viewer-stage" aria-label="Área de visualización" aria-live="off">
+              <div class="empty-state"><span class="empty-icon" aria-hidden="true">◧</span><strong>Tu imagen, a tu manera</strong><p>Elige un archivo para empezar. Puedes mover y ampliar las imágenes con los dedos.</p></div>
+            </div>
+            <div class="viewer-bottomline"><span id="viewer-note">Arrastra una imagen aquí o usa «Elegir archivo»</span><span class="preview-type" id="viewer-kind">Vista original</span></div>
+          </div>
+
+          <div class="quick-actions" id="image-actions" hidden aria-label="Herramientas rápidas para imagen">
+            <button type="button" class="quick-button" id="zoom-out" aria-label="Reducir zoom" title="Reducir zoom">−</button>
+            <label class="zoom-group" for="zoom-slider"><span>Zoom</span><input type="range" id="zoom-slider" min="50" max="400" step="1" value="100"><output id="zoom-value" for="zoom-slider">100%</output></label>
+            <button type="button" class="quick-button" id="zoom-in" aria-label="Ampliar zoom" title="Ampliar zoom">＋</button>
+            <button type="button" class="quick-button lock-button" id="lock-button" aria-pressed="false" title="Bloquear o desbloquear los gestos"><span id="lock-icon" aria-hidden="true">♧</span><span id="lock-label">Bloquear</span></button>
+          </div>
+          <div class="action-row" id="image-extra-actions" hidden>
+            <button type="button" id="preview-button" class="button button-secondary"><span aria-hidden="true">⛶</span> Vista limpia</button>
+            <button type="button" id="download-button" class="button button-secondary"><span aria-hidden="true">↓</span> Descargar PNG</button>
+            <button type="button" id="reset-button" class="button button-text">Restablecer</button>
+          </div>
+          <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
+          <p class="gesture-help" id="gesture-help" hidden>Un dedo para mover · Dos dedos para ampliar · Bloquea para evitar movimientos accidentales.</p>
+        </section>
+
+        <aside class="tool-panel" aria-label="Panel de edición">
+          <div class="panel-header"><h2>Herramientas</h2><span id="panel-mode-caption">Anaglifo</span></div>
+          <div id="no-content-hint" class="no-content-hint"><span aria-hidden="true">✧</span><p>Importa una imagen o video para activar las herramientas.</p></div>
+
+          <div id="image-controls" hidden>
+            <div class="tool-panel-intro">Ajusta la imagen en tiempo real. Tu archivo original no cambia.</div>
+            <div class="control-group" id="anaglyph-controls">
+              <label for="brightness-slider"><span>Brillo</span><output id="brightness-value">100%</output></label>
+              <input id="brightness-slider" type="range" min="50" max="150" value="100" step="1">
+              <label for="contrast-slider"><span>Contraste</span><output id="contrast-value">100%</output></label>
+              <input id="contrast-slider" type="range" min="50" max="150" value="100" step="1">
+            </div>
+            <div class="control-group" id="sbs-controls" hidden>
+              <label for="disparity-slider"><span>Separación horizontal</span><output id="disparity-value">0%</output></label>
+              <input id="disparity-slider" type="range" min="-10" max="10" value="0" step="0.25">
+              <label for="vertical-slider"><span>Alineación vertical</span><output id="vertical-value">0%</output></label>
+              <input id="vertical-slider" type="range" min="-10" max="10" value="0" step="0.25">
+              <label class="toggle-row" for="swap-eyes"><span><strong>Intercambiar ojos</strong><small>Izquierda ↔ derecha</small></span><input id="swap-eyes" type="checkbox" role="switch"><span class="switch-ui" aria-hidden="true"></span></label>
+              <p class="micro-hint">Usa ajustes suaves: no fuerces la vista si aparece visión doble.</p>
+            </div>
+            <div class="lock-description" id="lock-description">Gestos habilitados. Puedes mover y ampliar la imagen directamente.</div>
+          </div>
+          <div id="video-controls" hidden>
+            <p class="tool-panel-intro">Video MP4 local. Usa los controles del reproductor para reproducir, pausar, buscar y ajustar el volumen.</p>
+            <p class="micro-hint">El modo VR y los ajustes dinámicos de video se incorporarán en la siguiente etapa.</p>
+          </div>
+
+          <details class="more-info" id="file-info">
+            <summary>Detalles del archivo <span aria-hidden="true">⌄</span></summary>
+            <dl class="file-details">
+              <div><dt>Nombre</dt><dd id="detail-name">Ninguno</dd></div>
+              <div><dt>Formato</dt><dd id="detail-format">—</dd></div>
+              <div><dt>Tamaño</dt><dd id="detail-size">—</dd></div>
+              <div><dt>Resolución</dt><dd id="detail-resolution">—</dd></div>
+              <div><dt>Duración</dt><dd id="detail-duration">—</dd></div>
+            </dl>
+          </details>
+          <details class="more-info help-info">
+            <summary>¿Cómo usar este modo? <span aria-hidden="true">⌄</span></summary>
+            <p id="module-help">Con lentes rojo-cian puedes percibir la profundidad de una imagen anaglifo real.</p>
+          </details>
+        </aside>
+      </div>
+      <p class="privacy-footer">Todo ocurre en tu dispositivo · Sin cuentas ni servidores · StereoVision Studio 3D v0.2</p>
+    </main>
+    <footer class="app-footer">Desarrollado por Derek Alejandro Vargas Meneses · ITIC · 22200792 · TecNM Pachuca</footer>
+  </div>
+
+  <div class="focus-overlay" id="focus-overlay" hidden role="dialog" aria-modal="true" aria-label="Vista limpia de la imagen">
+    <div class="focus-bar"><span>Vista limpia</span><button class="focus-close" type="button" id="focus-exit">Salir de vista <span aria-hidden="true">×</span></button></div>
+    <div class="focus-viewer" id="focus-viewer"></div>
+    <div class="focus-hint" id="focus-hint">Si la imagen está desbloqueada, puedes ajustarla con los dedos.</div>
+  </div>
+</body>
+</html>
