@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f5f5f3">
   <meta name="description" content="StereoVision Studio 3D: edición local de imágenes anaglifo, imágenes SBS y video SBS.">
-  <title>StereoVision Studio 3D · v0.3</title>
+  <title>StereoVision Studio 3D · v0.4</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/img/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/img/favicon-32.png">
+  <link rel="shortcut icon" href="./assets/img/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/apple-touch-icon.png">
   <link rel="stylesheet" href="./assets/css/styles.css">
   <link rel="stylesheet" href="./assets/css/responsive.css">
   <script type="module" src="./assets/js/main.js"></script>
@@ -14,7 +18,7 @@
   <div class="app-shell">
     <header class="topbar">
       <a class="brand" href="./" aria-label="StereoVision Studio 3D, inicio">
-        <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+        <img class="brand-logo" src="./assets/img/icon-192.png" width="35" height="35" alt="" aria-hidden="true">
         <span class="brand-name">StereoVision <span>Studio 3D</span></span>
       </a>
       <span class="local-note"><span class="online-dot" aria-hidden="true"></span>Archivos privados · Edición local</span>
@@ -81,7 +85,7 @@
           </div>
           <div class="action-row" id="image-extra-actions" hidden>
             <button type="button" id="preview-button" class="button button-secondary"><span aria-hidden="true">⛶</span> Vista limpia</button>
-            <button type="button" id="download-button" class="button button-secondary"><span aria-hidden="true">↓</span> Descargar PNG</button>
+            <div class="image-save-actions"><select id="image-export-format" aria-label="Formato de la imagen exportada"><option value="png">PNG</option><option value="jpeg">JPG</option></select><button type="button" id="download-button" class="button button-secondary"><span aria-hidden="true">↓</span> Guardar imagen</button><button type="button" id="share-image-button" class="button button-ghost" hidden>Compartir</button></div>
             <button type="button" id="reset-button" class="button button-text">Restablecer</button>
           </div>
           <div id="video-playback" class="video-playback" hidden aria-label="Reproductor MP4">
@@ -152,7 +156,25 @@
               <label class="toggle-row" for="video-swap-eyes"><span><strong>Intercambiar ojos</strong><small>Izquierda ↔ derecha</small></span><input id="video-swap-eyes" type="checkbox" role="switch"><span class="switch-ui" aria-hidden="true"></span></label>
               <button id="video-reset-button" type="button" class="button button-secondary wide-button">Restablecer ajustes</button>
             </div>
-            <p class="micro-hint">El visor VR de video y la exportación MP4 quedan para una etapa posterior.</p>
+            <div class="video-export-panel">
+              <h3 class="mini-heading">Guardar video editado</h3>
+              <label class="export-audio-label" for="export-audio"><input type="checkbox" id="export-audio" checked> Incluir audio</label>
+              <p class="micro-hint">Se reproduce y graba el video completo desde el inicio, a velocidad real. Mantén la pestaña abierta y activa. El formato será MP4 o WebM según tu navegador.</p>
+              <div class="export-action-buttons">
+                <button id="video-export-button" type="button" class="button button-primary wide-button">↓ Exportar video calibrado</button>
+                <button id="video-export-cancel" type="button" class="button button-ghost" hidden>Cancelar</button>
+              </div>
+              <div id="video-export-progress-wrap" class="export-progress-wrap" hidden>
+                <progress id="video-export-progress" max="100" value="0"></progress>
+                <output id="video-export-percent">0%</output>
+              </div>
+              <p id="video-export-status" class="export-message" aria-live="polite"></p>
+              <div id="video-export-result" class="export-result" hidden>
+                <a id="video-export-link" class="button button-secondary" download>↓ Descargar archivo generado</a>
+                <button id="video-share-button" type="button" class="button button-ghost" hidden>Compartir / Guardar en móvil</button>
+              </div>
+            </div>
+            <p class="micro-hint">El visor VR de video queda para una etapa posterior. La exportación usa solo funciones del navegador.</p>
           </div>
           <div id="preset-panel" class="preset-panel" hidden>
             <h3 class="mini-heading">Mis ajustes guardados</h3>
@@ -177,7 +199,7 @@
           </details>
         </aside>
       </div>
-      <p class="privacy-footer">Todo ocurre en tu dispositivo · Sin cuentas ni servidores · StereoVision Studio 3D v0.3</p>
+      <p class="privacy-footer">Todo ocurre en tu dispositivo · Sin cuentas ni servidores · StereoVision Studio 3D v0.4</p>
     </main>
     <footer class="app-footer">Desarrollado por Derek Alejandro Vargas Meneses · ITIC · 22200792 · TecNM Pachuca</footer>
   </div>

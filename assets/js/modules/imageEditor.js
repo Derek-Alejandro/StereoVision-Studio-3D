@@ -156,7 +156,7 @@ export class ImageEditor {
     event.preventDefault(); this.changed();
   }
   changed() { this.requestDraw(); this.onChange?.(); }
-  async download() {
+  async download(format = 'png') {
     if (this.closed) throw new Error('La imagen ya no está disponible.');
     const rect = this.host?.getBoundingClientRect();
     if (!rect || rect.width < 2 || rect.height < 2) throw new Error('No se puede exportar una vista vacía.');
@@ -169,9 +169,13 @@ export class ImageEditor {
     const ctx = output.getContext('2d', {alpha:false});
     if (!ctx) throw new Error('Tu navegador no pudo preparar la descarga PNG.');
     this.paint(ctx, outW, outH, rect.width, rect.height);
-    const blob = await new Promise((resolve,reject) => output.toBlob(v => v ? resolve(v) : reject(new Error('No se pudo codificar la imagen PNG.')), 'image/png'));
-    output.width=0; output.height=0;
-    return blob;
+    const type=format==='jpeg'?'image/jpeg':'image/png';
+    try {
+      return await new Promise((resolve,reject) => output.toBlob(
+        v => v ? resolve(v) : reject(new Error('No se pudo generar el archivo de imagen.')),
+        type, format==='jpeg'?0.94:undefined
+      ));
+    } finally { output.width=0; output.height=0; }
   }
   dispose() {
     if (this.closed) return;

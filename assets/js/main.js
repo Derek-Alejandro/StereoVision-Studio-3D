@@ -5,11 +5,14 @@ import {VideoEditor} from './modules/videoEditor.js';
 import {newCalibration,cleanCalibration,clamp} from './modules/calibration.js';
 import {renderStudio,renderCalibration,renderPlayback,emptyContent,setFeedback,setPlaybackState} from './modules/ui.js';
 import {listPresets,savePreset,deletePreset,getPreset} from './modules/presetStore.js';
+import {VideoExporter,exportSupported,releaseAudioGraph} from './modules/videoExporter.js';
 const $=id=>document.getElementById(id);
 const stage=$('viewer-stage'),fileInput=$('file-input');
 const state={mode:DEFAULT_MODE,sourceType:'combined',status:'empty',resource:null,controller:null,generation:0,
   settings:newCalibration(),editor:null,focus:false,draftFiles:{left:null,right:null}};
 let dragDepth=0;
+let imageShare=null,videoDownload=null;
+let activeVideoExporter=null;
 
 function clearFocus(){
   if(!state.focus)return;
@@ -18,9 +21,12 @@ function clearFocus(){
   $('preview-button').focus();
 }
 function disposeActive(clearDraft=true){
+  activeVideoExporter?.cancel('Se cambió de archivo durante la exportación.');activeVideoExporter=null;
+  clearVideoDownload();imageShare=null;
   if(state.focus)clearFocus();
   state.controller?.abort();state.controller=null;
   state.editor?.dispose();state.editor=null;
+  if(state.resource?.mode==='sbs-video')releaseAudioGraph(state.resource.element);
   state.resource?.dispose();state.resource=null;
   state.settings=newCalibration();state.generation++;state.status='empty';
   fileInput.value='';$('left-file-input').value='';$('right-file-input').value='';
@@ -43,12 +49,12 @@ function renderPresets(selectedId=''){
   $('preset-delete').disabled=!select.value;
 }
 function chooseMode(mode){
-  if(!MODES[mode]||state.mode===mode)return;
+  if(activeVideoExporter||!MODES[mode]||state.mode===mode)return;
   disposeActive();state.mode=mode;state.sourceType='combined';
   setFeedback();renderStudio(state);renderPresets();paintStage();
 }
 function chooseSource(source){
-  if(source===state.sourceType||!['combined','pair'].includes(source)||MODES[state.mode].kind!=='image')return;
+  if(activeVideoExporter||source===state.sourceType||!['combined','pair'].includes(source)||MODES[state.mode].kind!=='image')return;
   disposeActive();state.sourceType=source;setFeedback();renderStudio(state);paintStage();
 }
 function startLoad(loader){
@@ -82,9 +88,9 @@ function startLoad(loader){
     }
   })();
 }
-function importFile(file){if(!file)return;startLoad((mode,signal)=>openLocalMedia(file,mode,signal));}
+function importFile(file){if(activeVideoExporter)return;if(!file)return;startLoad((mode,signal)=>openLocalMedia(file,mode,signal));}
 function importPairSide(side,file){
-  if(!file||!['left','right'].includes(side))return;
+  if(activeVideoExporter||!file||!['left','right'].includes(side))return;
   disposeActive(false);state.draftFiles[side]=file;
   const {left,right}=state.draftFiles;
   if(left&&right){
@@ -116,21 +122,96 @@ function openFocus(){
   $('focus-hint').textContent=state.settings.locked?'Imagen bloqueada · Sal de la vista para desbloquear.':'Desliza para mover la selección o pellizca para ampliar.';
   $('focus-exit').focus();
 }
+function safeBaseName(filename='archivo'){
+  return filename.replace(/\.[^.]+$/,'').slice(0,65).replace(/[\\/:*?"<>|]/g,'_')||'archivo';
+}
+function downloadBlob(blob,name){
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),120000);
+}
 async function downloadCurrent(){
   const editor=state.editor,resource=state.resource;
   if(!editor||!resource||resource.mode==='sbs-video')return;
-  const btn=$('download-button');btn.disabled=true;btn.textContent='Preparando PNG…';
+  const format=$('image-export-format').value;
+  const btn=$('download-button');btn.disabled=true;btn.textContent='Preparando imagen…';
   try{
-    const blob=await editor.download();
+    const blob=await editor.download(format);
     if(state.resource!==resource)throw new Error('Cambiaste de archivo durante la descarga.');
-    const url=URL.createObjectURL(blob),a=document.createElement('a');
-    const basename=resource.file.name.replace(/\.[^.]+$/,'').slice(0,70).replace(/[\\/:*?"<>|]/g,'_');
-    a.href=url;a.download=`${basename||'imagen'}-${resource.mode==='anaglyph'?'anaglifo':'sbs'}-calibrado.png`;
-    document.body.append(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),30000);
-    setFeedback('PNG exportado con los ajustes visibles. Los archivos originales no cambian.');
-  }catch(error){setFeedback(error.message||'No se pudo generar el PNG.',true);}
-  finally{btn.disabled=false;btn.innerHTML='<span aria-hidden="true">↓</span> Descargar PNG';}
+    const extension=format==='jpeg'?'jpg':'png';
+    const filename=`${safeBaseName(resource.file.name)}-${resource.mode==='anaglyph'?'anaglifo':'sbs'}-calibrado.${extension}`;
+    imageShare={blob,filename};
+    downloadBlob(blob,filename);
+    $('share-image-button').hidden=!(navigator.canShare&&navigator.share);
+    setFeedback(`Imagen ${extension.toUpperCase()} exportada con la calibración visible. El original está intacto.`);
+  }catch(error){setFeedback(error.message||'No se pudo generar la imagen.',true);}
+  finally{btn.disabled=false;btn.innerHTML='<span aria-hidden="true">↓</span> Guardar imagen';}
+}
+async function shareExport(record){
+  if(!record||!navigator.share||!navigator.canShare)return;
+  try{
+    const file=new File([record.blob],record.filename,{type:record.blob.type});
+    if(!navigator.canShare({files:[file]})){
+      setFeedback('Tu dispositivo no permite compartir este tipo o tamaño de archivo. Utiliza el botón de descarga.',true);return;
+    }
+    await navigator.share({files:[file],title:'StereoVision Studio 3D'});
+  }catch(error){if(error.name!=='AbortError')setFeedback('No se pudo compartir el archivo. Descárgalo desde el navegador.',true);}
+}
+function clearVideoDownload(){
+  if(videoDownload?.url)URL.revokeObjectURL(videoDownload.url);
+  videoDownload=null;
+  $('video-export-result').hidden=true;
+  $('video-export-link').removeAttribute('href');
+  $('video-export-status').textContent='';
+  $('video-export-progress-wrap').hidden=true;
+}
+function videoExportUi(active){
+  $('video-export-button').hidden=active;
+  $('video-export-cancel').hidden=!active;
+  $('video-export-progress-wrap').hidden=!active;
+  for(const id of ['video-play','video-back','video-forward','video-progress','video-volume','video-zoom-slider','video-disparity-slider','video-swap-eyes','video-reset-button','preset-save','preset-apply','preset-delete','import-button','clear-button','export-audio']) $(id).disabled=active;
+  for(const button of document.querySelectorAll('[data-mode]'))button.disabled=active;
+  if(!active){
+    $('export-audio').disabled=false;
+    if(state.resource)renderStudio(state);
+    renderPresets($('preset-select').value);
+  }
+}
+async function exportVideo(){
+  if(activeVideoExporter||state.resource?.mode!=='sbs-video')return;
+  const resource=state.resource;
+  if(!exportSupported()){
+    setFeedback('La grabación desde Canvas no está disponible en este navegador. Prueba Chrome/Edge Android o un Safari actualizado.',true);return;
+  }
+  clearVideoDownload();
+  $('video-export-progress').value=0;$('video-export-percent').textContent='0%';
+  const job=new VideoExporter(resource,state.settings,{
+    withAudio:$('export-audio').checked,
+    onProgress(value){if(activeVideoExporter!==job)return;const n=Math.round(value);$('video-export-progress').value=n;$('video-export-percent').textContent=`${n}%`;},
+    onStatus(message){if(activeVideoExporter===job)$('video-export-status').textContent=message;}
+  });
+  activeVideoExporter=job;
+  videoExportUi(true);
+  try{
+    const result=await job.start();
+    if(activeVideoExporter!==job||state.resource!==resource)return;
+    const filename=`${safeBaseName(resource.file.name)}-sbs-calibrado.${result.extension}`;
+    const url=URL.createObjectURL(result.blob);
+    videoDownload={blob:result.blob,filename,url};
+    const link=$('video-export-link');link.href=url;link.download=filename;
+    link.textContent=`↓ Descargar video ${result.extension.toUpperCase()}`;
+    $('video-export-result').hidden=false;
+    $('video-share-button').hidden=!(navigator.canShare&&navigator.share);
+    $('video-export-status').textContent=`Video listo: ${result.width} × ${result.height} · ${result.extension.toUpperCase()}. Pulsa descargar o compartir.`;
+    setFeedback(`Video exportado localmente en ${result.extension.toUpperCase()} con los ajustes aplicados. Toca «Descargar» para guardarlo.`);
+  }catch(error){
+    if(activeVideoExporter===job){
+      $('video-export-status').textContent=error.message||'No se pudo exportar el video.';
+      setFeedback(error.message||'No fue posible exportar el video.',true);
+    }
+  }finally{
+    if(activeVideoExporter===job){activeVideoExporter=null;videoExportUi(false);}
+  }
 }
 function currentVideo(){return state.resource?.mode==='sbs-video'?state.resource.element:null;}
 function seekVideo(delta){const v=currentVideo();if(!v||!Number.isFinite(v.duration))return;v.currentTime=clamp(v.currentTime+delta,0,v.duration);}
@@ -176,6 +257,10 @@ $('reset-button').addEventListener('click',resetSettings);
 $('lock-button').addEventListener('click',toggleLock);
 $('preview-button').addEventListener('click',openFocus);$('focus-exit').addEventListener('click',clearFocus);
 $('download-button').addEventListener('click',downloadCurrent);
+$('share-image-button').addEventListener('click',()=>shareExport(imageShare));
+$('video-export-button').addEventListener('click',exportVideo);
+$('video-export-cancel').addEventListener('click',()=>activeVideoExporter?.cancel());
+$('video-share-button').addEventListener('click',()=>shareExport(videoDownload));
 $('video-zoom-slider').addEventListener('input',event=>changeZoom(Number(event.target.value)/100));
 $('video-disparity-slider').addEventListener('input',event=>changeSetting('disparity',Number(event.target.value)));
 $('video-swap-eyes').addEventListener('change',event=>changeSetting('swap',event.target.checked));

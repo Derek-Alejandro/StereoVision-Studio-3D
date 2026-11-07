@@ -181,3 +181,33 @@ body.focus-active{overflow:hidden;}
 .volume-group{display:flex;align-items:center;gap:10px;color:#778178;font-size:11px;}
 .volume-group input{max-width:240px;}
 .volume-group output{font-size:11px;min-width:38px;text-align:right;}
+
+/* v0.4: exportaciones compactas, accesibles y cómodas en móvil. */
+select{font:inherit;}
+.image-save-actions{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;min-width:0;}
+.image-save-actions select{background:#fff;border:1px solid #e1e4df;color:#39423d;border-radius:9px;padding:0 8px;min-height:42px;font-weight:650;font-size:12px;}
+.image-save-actions .button{padding:9px 12px;}
+.video-export-panel{margin:18px 0 10px;padding:15px;background:#f5f7f3;border:1px solid #e4e9e1;border-radius:12px;}
+.video-export-panel .mini-heading{margin-bottom:9px;}
+.export-audio-label{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:650;color:#354337;margin:2px 0 9px;min-height:30px;}
+.export-audio-label input{accent-color:#647f67;width:17px;height:17px;}
+.video-export-panel .micro-hint{margin:7px 0 14px;line-height:1.55;}
+.export-action-buttons{display:flex;flex-wrap:wrap;gap:8px;}
+.export-action-buttons .button{white-space:normal;text-align:center;}
+.export-progress-wrap{display:flex;align-items:center;gap:9px;margin-top:14px;}
+.export-progress-wrap progress{width:100%;flex:1;height:10px;accent-color:#6c8c74;border-radius:10px;}
+.export-progress-wrap output{min-width:37px;text-align:right;font-size:12px;font-weight:700;color:#516755;}
+.export-message{margin:9px 0 0;font-size:11px;line-height:1.5;color:#596c5c;overflow-wrap:anywhere;}
+.export-message:empty{display:none;}
+.export-result{display:flex;align-items:stretch;gap:7px;flex-wrap:wrap;margin-top:11px;}
+.export-result .button{white-space:normal;font-size:12px;text-align:center;flex:1;}
+@media(max-width:580px){
+  .image-save-actions{width:100%;}
+  .image-save-actions #download-button{flex:1;}
+  .image-save-actions #share-image-button{flex:1;}
+  .video-export-panel{padding:12px 11px;}
+  .export-result{flex-direction:column;}
+}
+
+.brand-logo{width:35px;height:35px;display:block;border-radius:9px;flex:none;}
+@media(max-width:580px){.brand-logo{width:30px;height:30px;}}
