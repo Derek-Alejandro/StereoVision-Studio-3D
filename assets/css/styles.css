@@ -211,3 +211,53 @@ select{font:inherit;}
 
 .brand-logo{width:35px;height:35px;display:block;border-radius:9px;flex:none;}
 @media(max-width:580px){.brand-logo{width:30px;height:30px;}}
+
+/* v0.5 · Cardboard. Visor de dos ojos en la misma página, sin dependencia externa. */
+.button-vr{background:#344d42;color:#fff;border:1px solid #344d42;box-shadow:none;}
+.button-vr:hover{background:#263f34;border-color:#263f34;}
+.button-vr:focus-visible,.vr-control:focus-visible,.vr-visibility:focus-visible{outline:3px solid #aee5c4;outline-offset:3px;}
+.video-vr-actions{display:flex;align-items:center;gap:12px;margin:12px 0 0;flex-wrap:wrap;}
+.video-vr-actions>span{font-size:11px;color:#727e74;flex:1;min-width:165px;}
+body.vr-active{overflow:hidden;touch-action:manipulation;}
+.vr-overlay{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;background:#050607;color:#fff;z-index:2500;overflow:hidden;touch-action:manipulation;overscroll-behavior:contain;}
+.vr-overlay:fullscreen{width:100%;height:100%;background:#050607;}
+.vr-stage{position:absolute;inset:0;background:#050607;overflow:hidden;}
+.vr-canvas{display:block;width:100%;height:100%;object-fit:fill;touch-action:manipulation;}
+.vr-topbar{position:absolute;top:0;left:0;right:0;display:flex;align-items:start;justify-content:space-between;gap:10px;padding:calc(11px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 8px calc(12px + env(safe-area-inset-left));background:linear-gradient(#080b0be0,#080b0b00);z-index:5;transition:opacity .18s ease;}
+.vr-mode-label{font-weight:650;letter-spacing:.02em;color:#e7f0e9;font-size:11px;align-self:center;white-space:nowrap;}
+.vr-top-actions{display:flex;gap:7px;align-items:center;justify-content:flex-end;flex-wrap:wrap;}
+.vr-control{background:#151c1ae8;border:1px solid #7c9284a8;color:#f2f7f1;border-radius:10px;font-size:12px;line-height:1.2;font-weight:650;min-height:44px;padding:10px 12px;touch-action:manipulation;}
+.vr-control:hover{background:#34493b;}
+.vr-exit{background:#293b33;border-color:#c8dfcf;min-width:76px;}
+.vr-bottom{position:absolute;bottom:calc(46px + env(safe-area-inset-bottom));left:0;right:0;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:9px;padding:0 calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left));z-index:5;transition:opacity .18s ease;pointer-events:none;}
+.vr-eye-label{font-weight:650;color:#c1d0c6;font-size:10px;text-align:center;text-shadow:0 1px 6px #000;align-self:end;}
+.vr-video-toolbar{pointer-events:auto;display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:100%;}
+.vr-video-toolbar .vr-control{min-height:44px;}
+.vr-play{background:#c6dfca;color:#172b1d;border-color:#c6dfca;min-width:100px;}
+.vr-play:hover{background:#eff9f0;}
+.vr-clock{font-variant-numeric:tabular-nums;white-space:nowrap;color:#e2e9e3;background:#15201bdc;border-radius:8px;padding:8px 9px;font-size:11px;font-weight:650;}
+.vr-visibility{position:absolute;bottom:calc(9px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:7;white-space:nowrap;color:#e4ede5;font-size:11px;font-weight:600;background:#18251ddd;border:1px solid #5c7462b3;border-radius:20px;padding:7px 14px;min-height:34px;touch-action:manipulation;}
+.vr-overlay.vr-ui-hidden .vr-topbar,.vr-overlay.vr-ui-hidden .vr-bottom{opacity:0;pointer-events:none;}
+.vr-overlay.vr-ui-hidden .vr-orientation{opacity:0;pointer-events:none;}
+.vr-orientation{display:none;position:absolute;z-index:4;top:50%;left:50%;transform:translate(-50%,-50%);border:1px solid #b6c7b7b5;border-radius:17px;background:#101b17e8;color:#f4f8f4;padding:16px;max-width:min(92vw,320px);width:85%;box-shadow:0 10px 40px #000a;text-align:center;line-height:1.4;pointer-events:none;transition:opacity .18s ease;}
+.vr-orientation span{display:block;font-size:31px;line-height:1.1;margin-bottom:8px;}
+.vr-orientation strong{display:block;font-size:15px;}
+.vr-orientation small{display:block;font-size:11px;color:#c4d3c6;margin-top:6px;}
+.vr-message{position:absolute;z-index:8;top:calc(67px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:max-content;max-width:min(92vw,540px);padding:10px 14px;background:#14251ae8;border:1px solid #7f9983;border-radius:11px;font-size:12px;text-align:center;pointer-events:none;}
+@media(orientation:portrait){.vr-orientation{display:block;}}
+@media(max-height:440px) and (orientation:landscape){
+  .vr-topbar{padding-top:calc(3px + env(safe-area-inset-top));}
+  .vr-control{min-height:38px;padding:8px 10px;font-size:11px;}
+  .vr-mode-label{font-size:10px;}
+  .vr-bottom{bottom:calc(34px + env(safe-area-inset-bottom));}
+  .vr-visibility{bottom:calc(4px + env(safe-area-inset-bottom));min-height:29px;padding:5px 12px;}
+}
+@media(max-width:620px){
+  .vr-topbar{padding-left:calc(7px + env(safe-area-inset-left));padding-right:calc(7px + env(safe-area-inset-right));}
+  .vr-mode-label{max-width:85px;white-space:normal;line-height:1.25;}
+  .vr-top-actions{gap:4px;}
+  .vr-video-toolbar{gap:4px;}
+  .vr-video-toolbar .vr-control{min-width:0;padding:7px 8px;font-size:10px;}
+  .vr-clock{font-size:10px;}
+  .vr-eye-label{font-size:9px;}
+}

@@ -1,4 +1,4 @@
-# StereoVision Studio 3D — v0.4
+# StereoVision Studio 3D — v0.5
 
 **Instituto Tecnológico de Pachuca**  
 **Ingeniería en Tecnologías de la Información y Comunicaciones**  
@@ -10,17 +10,17 @@
 
 ## ¿Qué resuelve el proyecto?
 
-Editor estereoscópico **100 % local** para comparar, ajustar y presentar contenido binocular sin modificar los archivos originales. El módulo anaglifo permite ver el resultado con **lentes rojo-cian**; el módulo SBS distribuye una perspectiva a cada ojo, adecuada para una posterior presentación con visores VR para teléfono. No convierte fotografías planas en profundidad 3D artificial.
+Editor estereoscópico **100 % local** para comparar, ajustar y presentar contenido binocular sin modificar los archivos originales. El módulo anaglifo permite ver el resultado con **lentes rojo-cian**; el módulo SBS distribuye una perspectiva a cada ojo, apta para la vista VR/Cardboard incluida en la aplicación. No convierte fotografías planas en profundidad 3D artificial.
 
 ## Modalidades operativas
 
 | Módulo | Entrada | Funciones |
 |---|---|---|
 | **Anaglifo rojo-cian** | Anaglifo preparado **o** dos fotografías independientes (izquierda + derecha) | Composición real: rojo = ojo izquierdo; verde/azul = ojo derecho. Escala 50–400 %, brillo, contraste, ajuste horizontal/vertical, desplazamiento por ojo, arrastre táctil, bloqueo, vista limpia, exportación PNG/JPG, compartir archivos y perfiles. |
-| **Imagen SBS** | Imagen SBS preparada **o** dos fotografías independientes | Recorte izquierdo/derecho correcto; escala 50–400 %, desplazamiento horizontal y vertical en píxeles CSS, intercambio real de ojos, alineación individual, arrastre táctil, bloqueo, vista limpia, PNG/JPG, compartir archivos y perfiles. |
-| **Video SBS** | MP4 SBS compatible con navegador | **Un solo video**, compuesto en dos regiones; reproducir/pausar, buscar, ±10 s, volumen, escala, desplazamiento horizontal, intercambio de ojos, restablecer, guardar calibración y exportar el video con los ajustes aplicados (MP4/WebM según soporte del navegador). |
+| **Imagen SBS** | Imagen SBS preparada **o** dos fotografías independientes | Recorte izquierdo/derecho correcto; escala 50–400 %, desplazamiento horizontal y vertical en píxeles CSS, intercambio real de ojos, alineación individual, arrastre táctil, bloqueo, vista limpia, **vista VR/Cardboard**, PNG/JPG, compartir archivos y perfiles. |
+| **Video SBS** | MP4 SBS compatible con navegador | **Un solo video**, compuesto en dos regiones; reproducir/pausar, buscar, ±10 s, volumen, escala, desplazamiento horizontal, intercambio de ojos, restablecer, guardar calibración, **vista VR/Cardboard con controles de reproducción** y exportar el video con los ajustes aplicados (MP4/WebM según soporte del navegador). |
 
-> El modo VR inmersivo (Cardboard y pantalla completa) se trabajará en una etapa posterior. Los videos se exportan localmente en **tiempo real**, sin servidores: según el navegador el resultado es WebM (habitual en Chrome/Android) o MP4 (si el codificador es compatible, por ejemplo Safari actualizado). **No se garantiza MP4 en todos los dispositivos.**
+> La vista VR se presenta **en esta misma página**, con una región por ojo y pantalla completa opcional. Si el navegador no permite Fullscreen u orientar automáticamente, la vista VR permanece utilizable en pantalla y muestra indicaciones para girar el dispositivo a horizontal. Los videos se exportan localmente en **tiempo real**, sin servidores: el resultado será WebM o MP4 según soporte del navegador. **No se garantiza MP4 en todos los dispositivos.**
 
 ## Uso básico
 
@@ -33,7 +33,10 @@ Editor estereoscópico **100 % local** para comparar, ajustar y presentar conten
 7. Si te gusta un ajuste, introduce un nombre en **Mis ajustes guardados → Guardar**. Posteriormente selecciónalo y pulsa **Aplicar**; también puedes **Eliminar** perfiles. Se conservan como máximo 12 ajustes por módulo en `localStorage`, **solo valores numéricos/booleanos, nunca archivos**.
 8. En **Video SBS**, ajusta escala, separación e intercambio de ojos y pulsa **Exportar video calibrado**. El Studio reproducirá el MP4 desde el inicio mientras graba el render SBS. Mantén la pestaña abierta. Puedes ver el progreso, **Cancelar** y después **Descargar video WEBM/MP4** o **Compartir / Guardar en móvil** si está disponible.
 9. **Incluir audio** está activado inicialmente. Si el navegador no admite la captura de audio, puedes desmarcarlo para exportar solo video. No se cambia el MP4 original ni se conserva una copia en el servidor.
-10. Pulsa **Restablecer** para regresar a los valores iniciales. Una nueva importación siempre comienza con ajustes predeterminados: los perfiles solo se aplican manualmente.
+10. En **Imagen SBS** o **Video SBS**, selecciona **Vista VR / Cardboard**. Se abre una vista limpia con **dos regiones horizontales** (ojo izquierdo a la izquierda; derecho a la derecha). Se conserva el zoom, los desplazamientos y el intercambio de ojos del Studio. **Anaglifo** permanece disponible para lentes rojo-cian, no para gafas Cardboard.
+11. En el teléfono, **gira a horizontal** y pulsa **Pantalla completa** si tu navegador lo permite. Si no lo permite, la vista VR seguirá abierta dentro de la misma página; los controles de orientación se muestran mientras esté vertical. Antes de colocar el móvil en las gafas, comprueba que la disparidad sea cómoda.
+12. Puedes tocar **Ocultar controles** para una vista despejada y **Mostrar controles** para volver a ver las opciones. En video, el visor VR incluye **reproducir/pausar, ±10 s y tiempo**; el video conserva volumen y progreso del reproductor original. Pulsa **Salir** para regresar al Studio sin perder el archivo, la calibración ni el tiempo del video. También puedes salir con Escape en escritorio.
+13. Pulsa **Restablecer** para regresar a los valores iniciales. Una nueva importación siempre comienza con ajustes predeterminados: los perfiles solo se aplican manualmente.
 
 ### Detalles estereoscópicos
 
@@ -86,7 +89,8 @@ StereoVision-Studio-3D/
 │           ├── sbsImage.js            # Vista por ojo (compuesta o par)
 │           ├── imageEditor.js         # Gestos, bloqueo, PNG/JPG, canvas
 │           ├── sbsVideo.js            # Composición de fotogramas SBS
-│           ├── videoEditor.js          # Reproducción y Canvas de video
+│           ├── videoEditor.js          # Reproducción y Canvas de video; suspensión durante VR
+│           ├── vrViewer.js             # Vista SBS Cardboard (imagen/video, sin doble decodificación)
 │           ├── videoExporter.js        # MediaRecorder, mezcla y progreso
 │           ├── webmDuration.js         # Duración EBML para WebM exportado
 │           └── ui.js                  # Render de controles/estado
@@ -94,7 +98,8 @@ StereoVision-Studio-3D/
     ├── pruebas-etapa1.md
     ├── pruebas-etapa2.md
     ├── pruebas-v03.md
-    └── pruebas-v04.md
+    ├── pruebas-v04.md
+    └── pruebas-v05-vr.md
 ```
 
 ## Validación, privacidad y límites
@@ -105,16 +110,19 @@ StereoVision-Studio-3D/
 - La exportación de video depende de **MediaRecorder + Canvas.captureStream + decodificación del MP4 de origen**. Chrome/Edge suelen generar WebM; Safari puede generar MP4. Algunos navegadores móviles no admiten la función. La aplicación informa claramente si no es posible.
 - La salida de video se graba **a velocidad de reproducción**: un MP4 de 3 minutos tarda al menos unos 3 minutos. Necesita CPU, memoria, espacio local y mantener la pestaña activa. Para videos largos o 4K, usar un equipo más potente o reducir previamente el archivo.
 - La resolución de video exportado conserva la proporción SBS del original, pero está limitada por memoria (aproximadamente 1920 px de ancho en móvil, hasta 3840 px en escritorio). Las diferencias de márgenes o encuadre dependen de la relación de aspecto del visor.
+- La vista Cardboard no cambia la IPD física ni transforma contenido 2D en 3D. El usuario debe aportar **pares de perspectivas reales** y ajustar una separación cómoda. Por seguridad, termina la prueba ante mareo, visión doble persistente o fatiga visual.
+- La pantalla completa y el bloqueo de orientación dependen de permisos y capacidades del navegador. iOS/Safari puede no permitir fijar la orientación; la vista dentro de la página funciona como alternativa.
+- El video Cardboard utiliza **el mismo elemento HTMLVideoElement** que el Studio (sin duplicar decodificadores); el dibujo del Studio se suspende mientras está activo el visor VR para ahorrar recursos. Al salir se reanuda la visualización normal.
 - Los perfiles se guardan localmente por módulo; no son lo mismo que exportar el archivo.
 - No se corrige automáticamente la geometría de las fotografías, ni se crea profundidad 3D a partir de una única imagen 2D.
 - Compatible con GitHub Pages por HTTP(S), sin rutas absolutas ni dependencias externas. Los tests reales de gafas VR y Safari/Chrome móvil físico deberán documentarse en la evaluación.
 
 ## Evidencias y conclusiones
 
-Documentar capturas de los tres módulos, restauración, bloqueo, ajustes por ojo, exportación PNG/JPG, error controlado, perfiles locales, reproducción y exportación MP4/WebM y posteriormente VR móvil. Las verificaciones de esta versión están en `docs/pruebas-v04.md`. Registrar incidencias encontradas con el teléfono físico usado en la evaluación.
+Documentar capturas de los tres módulos, restauración, bloqueo, ajustes por ojo, exportación PNG/JPG, error controlado, perfiles locales, reproducción, exportación MP4/WebM y VR móvil (vertical, horizontal y salida). El informe de pruebas de VR está en `docs/pruebas-v05-vr.md`; los anteriores permanecen documentados. **Pendientes**: pruebas físicas con el teléfono y gafas reales, revisión en Safari/Chrome móvil y publicación del enlace HTTPS de GitHub Pages.
 
 ### Publicación y favicon
 
 Todos los iconos se incluyen en `assets/img/`. `index.html` ya apunta a `favicon.svg`, `favicon.ico`, `favicon-32.png` y `apple-touch-icon.png` mediante rutas relativas; no hace falta editar las etiquetas al publicar el sitio HTTPS en GitHub Pages. Si el navegador conserva el icono anterior en caché, fuerza la recarga o abre una pestaña nueva.
 
-**Conclusión provisional:** se implementó una estructura modular de procesamiento y calibración estereoscópica que permite ajustar visualmente perspectivas auténticas de imágenes anaglifo y SBS conservando los archivos originales. Falta concluir y comprobar la experiencia VR en dispositivos físicos.
+**Conclusión provisional:** la aplicación integra composición y calibración estereoscópica, edición táctil, exportación y una vista Cardboard con perspectivas sincronizadas, conservando los archivos originales. Para la entrega quedan las evidencias físicas, las pruebas en el dispositivo de evaluación y la publicación HTTPS.

@@ -6,13 +6,18 @@ import {newCalibration,cleanCalibration,clamp} from './modules/calibration.js';
 import {renderStudio,renderCalibration,renderPlayback,emptyContent,setFeedback,setPlaybackState} from './modules/ui.js';
 import {listPresets,savePreset,deletePreset,getPreset} from './modules/presetStore.js';
 import {VideoExporter,exportSupported,releaseAudioGraph} from './modules/videoExporter.js';
+import {VRViewer} from './modules/vrViewer.js';
+import {formatTime} from './modules/ui.js';
 const $=id=>document.getElementById(id);
 const stage=$('viewer-stage'),fileInput=$('file-input');
 const state={mode:DEFAULT_MODE,sourceType:'combined',status:'empty',resource:null,controller:null,generation:0,
-  settings:newCalibration(),editor:null,focus:false,draftFiles:{left:null,right:null}};
+  settings:newCalibration(),editor:null,focus:false,vr:false,vrViewer:null,draftFiles:{left:null,right:null}};
 let dragDepth=0;
 let imageShare=null,videoDownload=null;
 let activeVideoExporter=null;
+let vrReturnFocus=null;
+let vrFullscreenActive=false;
+let vrOrientationLocked=false;
 
 function clearFocus(){
   if(!state.focus)return;
@@ -21,6 +26,7 @@ function clearFocus(){
   $('preview-button').focus();
 }
 function disposeActive(clearDraft=true){
+  if(state.vr)closeVR();
   activeVideoExporter?.cancel('Se cambió de archivo durante la exportación.');activeVideoExporter=null;
   clearVideoDownload();imageShare=null;
   if(state.focus)clearFocus();
@@ -157,6 +163,87 @@ async function shareExport(record){
     await navigator.share({files:[file],title:'StereoVision Studio 3D'});
   }catch(error){if(error.name!=='AbortError')setFeedback('No se pudo compartir el archivo. Descárgalo desde el navegador.',true);}
 }
+function updateVrPlayback(){
+  if(!state.vr || state.resource?.mode!=='sbs-video')return;
+  const v=state.resource.element;
+  $('vr-play').textContent=v.paused?'▶ Reproducir':'❚❚ Pausar';
+  $('vr-video-time').textContent=`${formatTime(v.currentTime)} / ${formatTime(v.duration)}`;
+}
+const vrPlaybackEvents=['play','pause','playing','timeupdate','seeked','durationchange','ended'];
+function attachVrPlayback(video){for(const event of vrPlaybackEvents)video.addEventListener(event,updateVrPlayback);updateVrPlayback();}
+function detachVrPlayback(video){if(video)for(const event of vrPlaybackEvents)video.removeEventListener(event,updateVrPlayback);}
+function vrNotice(message=''){
+  const element=$('vr-message');
+  element.hidden=!message;
+  element.textContent=message;
+}
+function closeVR(){
+  if(!state.vr)return;
+  const video=state.resource?.mode==='sbs-video'?state.resource.element:null;
+  detachVrPlayback(video);
+  state.vr=false;
+  state.vrViewer?.dispose();state.vrViewer=null;
+  $('vr-stage').replaceChildren();
+  $('vr-overlay').hidden=true;
+  document.body.classList.remove('vr-active');
+  document.querySelector('.app-shell').inert=false;
+  $('vr-overlay').classList.remove('vr-ui-hidden');
+  $('vr-toggle-ui').textContent='Ocultar controles';
+  $('vr-toggle-ui').setAttribute('aria-pressed','false');
+  vrNotice();
+  if(document.fullscreenElement===$('vr-overlay'))document.exitFullscreen?.().catch(()=>{});
+  if(vrOrientationLocked){try{screen.orientation.unlock();}catch{}vrOrientationLocked=false;}
+  vrFullscreenActive=false;
+  state.editor?.setSuspended?.(false);
+  state.editor?.requestDraw();
+  const target=vrReturnFocus;vrReturnFocus=null;
+  requestAnimationFrame(()=>target?.focus({preventScroll:true}));
+}
+function openVR(sourceButton){
+  if(state.vr || state.focus || activeVideoExporter || !state.resource || !['sbs-image','sbs-video'].includes(state.resource.mode))return;
+  vrReturnFocus=sourceButton;
+  const overlay=$('vr-overlay');
+  overlay.hidden=false;
+  document.body.classList.add('vr-active');
+  document.querySelector('.app-shell').inert=true;
+  overlay.classList.remove('vr-ui-hidden');
+  $('vr-toggle-ui').textContent='Ocultar controles';
+  $('vr-toggle-ui').setAttribute('aria-pressed','false');
+  $('vr-video-toolbar').hidden=state.resource.mode!=='sbs-video';
+  state.vr=true;
+  try{
+    state.vrViewer=new VRViewer(state.resource,state.settings);
+    state.editor?.setSuspended?.(true);
+    state.vrViewer.mount($('vr-stage'));
+    if(state.resource.mode==='sbs-video')attachVrPlayback(state.resource.element);
+    vrNotice();
+    $('vr-exit').focus({preventScroll:true});
+  }catch(error){closeVR();setFeedback(error.message||'No se pudo abrir el visor VR.',true);}
+}
+async function enterVrFullscreen(){
+  if(!state.vr)return;
+  const overlay=$('vr-overlay');
+  if(document.fullscreenElement===overlay){
+    try{await document.exitFullscreen();}catch{}return;
+  }
+  if(typeof overlay.requestFullscreen!=='function'){
+    vrNotice('Este navegador no permite pantalla completa. Puedes usar esta misma vista y girar el teléfono manualmente.');
+    return;
+  }
+  try{
+    await overlay.requestFullscreen({navigationUI:'hide'});
+    if(!state.vr)return;
+    vrFullscreenActive=true;
+    $('vr-fullscreen').textContent='Salir de pantalla completa';
+    if(screen.orientation?.lock){
+      try{await screen.orientation.lock('landscape');vrOrientationLocked=true;}
+      catch{vrNotice('Gira el teléfono manualmente a horizontal. El visor sigue funcionando.');}
+    }
+    state.vrViewer?.requestDraw();
+  }catch(error){
+    vrNotice('Pantalla completa no disponible. La vista VR funciona igualmente dentro de esta página.');
+  }
+}
 function clearVideoDownload(){
   if(videoDownload?.url)URL.revokeObjectURL(videoDownload.url);
   videoDownload=null;
@@ -256,6 +343,31 @@ for(const btn of document.querySelectorAll('[data-move]'))btn.addEventListener('
 $('reset-button').addEventListener('click',resetSettings);
 $('lock-button').addEventListener('click',toggleLock);
 $('preview-button').addEventListener('click',openFocus);$('focus-exit').addEventListener('click',clearFocus);
+$('vr-image-button').addEventListener('click',()=>openVR($('vr-image-button')));
+$('vr-video-button').addEventListener('click',()=>openVR($('vr-video-button')));
+$('vr-exit').addEventListener('click',closeVR);
+$('vr-fullscreen').addEventListener('click',enterVrFullscreen);
+$('vr-toggle-ui').addEventListener('click',()=>{
+  if(!state.vr)return;
+  const hidden=$('vr-overlay').classList.toggle('vr-ui-hidden');
+  $('vr-toggle-ui').textContent=hidden?'Mostrar controles':'Ocultar controles';
+  $('vr-toggle-ui').setAttribute('aria-pressed',String(hidden));
+});
+$('vr-play').addEventListener('click',async()=>{
+  const v=currentVideo();if(!state.vr||!v)return;
+  if(!v.paused){v.pause();return;}
+  try{await v.play();vrNotice();}
+  catch(error){vrNotice('No se pudo iniciar la reproducción. Toca de nuevo o comprueba que el MP4 sea compatible.');}
+});
+$('vr-back').addEventListener('click',()=>seekVideo(-10));
+$('vr-forward').addEventListener('click',()=>seekVideo(10));
+document.addEventListener('fullscreenchange',()=>{
+  if(!state.vr)return;
+  const isFullscreen=document.fullscreenElement===$('vr-overlay');
+  $('vr-fullscreen').textContent=isFullscreen?'Salir de pantalla completa':'⛶ Pantalla completa';
+  if(!isFullscreen&&vrFullscreenActive){closeVR();return;}
+  state.vrViewer?.requestDraw();
+});
 $('download-button').addEventListener('click',downloadCurrent);
 $('share-image-button').addEventListener('click',()=>shareExport(imageShare));
 $('video-export-button').addEventListener('click',exportVideo);
@@ -285,7 +397,7 @@ $('preset-select').addEventListener('change',()=>{
   $('preset-delete').disabled=!$('preset-select').value;
 });
 $('preset-name').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();saveCurrentPreset();}});
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&state.focus)clearFocus();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){if(state.vr)closeVR();else if(state.focus)clearFocus();}});
 function hasFiles(event){return Array.from(event.dataTransfer?.types||[]).includes('Files');}
 stage.addEventListener('dragenter',event=>{if(!hasFiles(event))return;event.preventDefault();dragDepth++;stage.classList.add('dragging');});
 stage.addEventListener('dragover',event=>{if(hasFiles(event)){event.preventDefault();event.dataTransfer.dropEffect='copy';}});

@@ -11,7 +11,7 @@ export class VideoEditor {
     this.canvas.setAttribute('role','img');this.canvas.setAttribute('aria-label','Fotogramas SBS alineados de un único video');
     this.anchor=document.createElement('div');this.anchor.className='video-source-anchor';
     this.anchor.append(this.video);
-    this.host=null;this.closed=false;this.raf=0;
+    this.host=null;this.closed=false;this.raf=0;this.suspended=false;
     this.observer=new ResizeObserver(()=>this.requestDraw());
     this.onFrame=()=>this.requestDraw();
     this.onPlayback=()=>{this.onUpdate?.();this.requestDraw();if(!this.video.paused)this.runLoop();};
@@ -24,14 +24,14 @@ export class VideoEditor {
     this.requestDraw();if(!this.video.paused)this.runLoop();
   }
   runLoop(){
-    if(this.closed||this.raf||this.video.paused)return;
+    if(this.closed||this.suspended||this.raf||this.video.paused)return;
     this.raf=requestAnimationFrame(()=>{
       this.raf=0;this.draw();if(!this.video.paused&&!this.video.ended)this.runLoop();
     });
   }
-  requestDraw(){if(this.closed||this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.draw();if(!this.video.paused&&!this.video.ended)this.runLoop();});}
+  requestDraw(){if(this.closed||this.suspended||this.raf)return;this.raf=requestAnimationFrame(()=>{this.raf=0;this.draw();if(!this.video.paused&&!this.video.ended)this.runLoop();});}
   draw(){
-    if(!this.host||this.closed)return;
+    if(!this.host||this.closed||this.suspended)return;
     const r=this.host.getBoundingClientRect();if(r.width<2||r.height<2)return;
     const dpr=Math.min(devicePixelRatio||1,2);
     const limit=Math.min(1,Math.sqrt(3_200_000/(r.width*r.height*dpr*dpr)));
@@ -47,6 +47,11 @@ export class VideoEditor {
     }
   }
   setZoom(next){this.settings.zoom=clamp(next,.5,4);this.requestDraw();this.onUpdate?.();}
+  setSuspended(suspend){
+    this.suspended=!!suspend;
+    if(this.suspended){cancelAnimationFrame(this.raf);this.raf=0;}
+    else this.requestDraw();
+  }
   dispose(){
     if(this.closed)return;this.closed=true;this.observer.disconnect();cancelAnimationFrame(this.raf);
     for(const name of ['loadeddata','seeked','timeupdate','durationchange','volumechange','ended','play','pause','playing']){

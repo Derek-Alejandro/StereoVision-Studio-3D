@@ -40,6 +40,8 @@ export function renderStudio(state){
   $('no-content-hint').hidden=!!resource;
   $('image-controls').hidden=!isImage;$('video-controls').hidden=!isVideo;$('video-playback').hidden=!isVideo;
   $('image-actions').hidden=!isImage;$('image-extra-actions').hidden=!isImage;$('gesture-help').hidden=!isImage;
+  $('vr-image-button').hidden=!(isImage&&mode==='sbs-image');
+  $('video-vr-actions').hidden=!isVideo;
   $('preset-panel').hidden=!resource;
   $('anaglyph-controls').hidden=mode!=='anaglyph';
   $('swap-eyes-row').hidden=mode==='anaglyph'&&resource?.type!=='pair';
